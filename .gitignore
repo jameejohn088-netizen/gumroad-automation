@@ -1,0 +1,17 @@
+.env
+*.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.db
+*.sqlite*
+node_modules/
+dist/
+build/
+*.apk
+*.aab
+local.properties
+.gradle/
+.idea/
+.DS_Store
