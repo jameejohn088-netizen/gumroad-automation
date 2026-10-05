@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  EncryptedSharedPreferences (secure_tokens) is already encrypted at rest;
+  exclude it from auto-backup so tokens never leave the device in a backup.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="secure_tokens.xml" />
+    </cloud-backup>
+</data-extraction-rules>
