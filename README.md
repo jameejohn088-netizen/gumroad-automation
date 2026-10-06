@@ -18,3 +18,5 @@ Real, working, production-quality Gumroad automation: **FastAPI backend** + **Re
 ## Quick start
 
 See `docs/SETUP.md`. Never paste secrets into chat — put them in `backend/.env` or the app UI.
+
+<!-- CI retrigger: fresh run after GitHub hosted-runner outage on 2026-10-06 -->
