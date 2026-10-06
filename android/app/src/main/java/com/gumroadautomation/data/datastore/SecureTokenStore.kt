@@ -27,7 +27,7 @@ class SecureTokenStore @Inject constructor(
         Constants.SECURE_PREFS_NAME,
         masterKey,
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.ValueEncryptionScheme.AES256_GCM,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
     )
 
     fun getAccessToken(): String? = prefs.getString(Constants.KEY_ACCESS_TOKEN, null)
