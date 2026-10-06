@@ -63,10 +63,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Ensure Android SDK packages
-  run: |
-    yes | sdkmanager --licenses > /dev/null || true
-    sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+     - run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
