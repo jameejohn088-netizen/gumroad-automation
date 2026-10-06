@@ -1,1 +1,42 @@
-PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPG1hbmlmZXN0IHhtbG5zOmFuZHJvaWQ9Imh0dHA6Ly9zY2hlbWFzLmFuZHJvaWQuY29tL2Fway9yZXMvYW5kcm9pZCIKICAgIHhtbG5zOnRvb2xzPSJodHRwOi8vc2NoZW1hcy5hbmRyb2lkLmNvbS90b29scyI+CgogICAgPHVzZXMtcGVybWlzc2lvbiBhbmRyb2lkOm5hbWU9ImFuZHJvaWQucGVybWlzc2lvbi5JTlRFUk5FVCIgLz4KICAgIDx1c2VzLXBlcm1pc3Npb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLnBlcm1pc3Npb24uQUNDRVNTX05FVFdPUktfU1RBVEUiIC8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLlBPU1RfTk9USUZJQ0FUSU9OUyIgLz4KCiAgICA8YXBwbGljYXRpb24KICAgICAgICBhbmRyb2lkOm5hbWU9Ii5HdW1yb2FkQXV0b21hdGlvbkFwcCIKICAgICAgICBhbmRyb2lkOmxhYmVsPSJAc3RyaW5nL2FwcF9uYW1lIgogICAgICAgIGFuZHJvaWQ6aWNvbj0iQG1pcG1hcC9pY19sYXVuY2hlciIKICAgICAgICBhbmRyb2lkOnJvdW5kSWNvbj0iQG1pcG1hcC9pY19sYXVuY2hlcl9yb3VuZCIKICAgICAgICBhbmRyb2lkOnRoZW1lPSJAc3R5bGUvVGhlbWUuR3Vtcm9hZEF1dG9tYXRpb24iCiAgICAgICAgYW5kcm9pZDpuZXR3b3JrU2VjdXJpdHlDb25maWc9IkB4bWwvbmV0d29ya19zZWN1cml0eV9jb25maWciCiAgICAgICAgYW5kcm9pZDpkYXRhRXh0cmFjdGlvblJ1bGVzPSJAeG1sL2JhY2t1cF9ydWxlcyIKICAgICAgICBhbmRyb2lkOmFsbG93QmFja3VwPSJ0cnVlIgogICAgICAgIHRvb2xzOnRhcmdldEFwaT0iMzQiPgoKICAgICAgICA8YWN0aXZpdHkKICAgICAgICAgICAgYW5kcm9pZDpuYW1lPSIuTWFpbkFjdGl2aXR5IgogICAgICAgICAgICBhbmRyb2lkOmV4cG9ydGVkPSJ0cnVlIgogICAgICAgICAgICBhbmRyb2lkOnRoZW1lPSJAc3R5bGUvVGhlbWUuR3Vtcm9hZEF1dG9tYXRpb24iPgogICAgICAgICAgICA8aW50ZW50LWZpbHRlcj4KICAgICAgICAgICAgICAgIDxhY3Rpb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLmludGVudC5hY3Rpb24uTUFJTiIgLz4KICAgICAgICAgICAgICAgIDxjYXRlZ29yeSBhbmRyb2lkOm5hbWU9ImFuZHJvaWQuaW50ZW50LmNhdGVnb3J5LkxBVU5DSEVSIiAvPgogICAgICAgICAgICA8L2ludGVudC1maWx0ZXI+CiAgICAgICAgPC9hY3Rpdml0eT4KCiAgICAgICAgPCEtLSBXb3JrTWFuYWdlcjogdXNlIG91ciBIaWx0LWJhY2tlZCBjb25maWd1cmF0aW9uIGZyb20gdGhlIEFwcGxpY2F0aW9uIGNsYXNzLiAtLT4KICAgICAgICA8cHJvdmlkZXIKICAgICAgICAgICAgYW5kcm9pZDpuYW1lPSJhbmRyb2lkeC5zdGFydHVwLkluaXRpYWxpemF0aW9uUHJvdmlkZXIiCiAgICAgICAgICAgIGFuZHJvaWQ6YXV0aG9yaXRpZXM9IiR7YXBwbGljYXRpb25JZH0uYW5kcm9pZHgtc3RhcnR1cCIKICAgICAgICAgICAgYW5kcm9pZDpleHBvcnRlZD0iZmFsc2UiCiAgICAgICAgICAgIHRvb2xzOm5vZGU9Im1lcmdlIj4KICAgICAgICAgICAgPG1ldGEtZGF0YQogICAgICAgICAgICAgICAgYW5kcm9pZDpuYW1lPSJhbmRyb2lkeC53b3JrLldvcmtNYW5hZ2VySW5pdGlhbGl6ZXIiCiAgICAgICAgICAgICAgICBhbmRyb2lkOnZhbHVlPSJhbmRyb2lkeC5zdGFydHVwIgogICAgICAgICAgICAgICAgdG9vbHM6bm9kZT0icmVtb3ZlIiAvPgogICAgICAgIDwvcHJvdmlkZXI+CiAgICA8L2FwcGxpY2F0aW9uPgo8L21hbmlmZXN0Pgo=
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".GumroadAutomationApp"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.GumroadAutomation"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:dataExtractionRules="@xml/backup_rules"
+        android:allowBackup="true"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.GumroadAutomation">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- WorkManager: use our Hilt-backed configuration from the Application class. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+    </application>
+</manifest>
