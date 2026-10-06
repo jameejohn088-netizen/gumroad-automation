@@ -1,0 +1,24 @@
+# Render Blueprint — one-click deploy of the Gumroad Automation backend.
+# Gives a permanent public URL (https://<name>.onrender.com) that never changes,
+# so the Android app's backend URL stays fixed.
+services:
+  - type: web
+    name: gumroad-automation-backend
+    runtime: docker
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    # Render injects $PORT; the Dockerfile's CMD hardcodes 8000, so override it.
+    dockerCommand: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./gumroad_app.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: TOKEN_MASTER_KEY
+        sync: false # paste a base64 32-byte key at deploy time (asked for in chat)
+      - key: MAIL_MODE
+        value: console
+      - key: SCHEDULER_ENABLED
+        value: "true"
