@@ -88,6 +88,7 @@ fun MoreScreen(
 }
 
 /** Clickable modifier without ripple for list rows (kept in one place). */
+@Composable 
 private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier =
     this.then(
         androidx.compose.foundation.clickable(
