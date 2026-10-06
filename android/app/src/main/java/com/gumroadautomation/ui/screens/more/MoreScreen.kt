@@ -1,5 +1,6 @@
 package com.gumroadautomation.ui.screens.more
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
@@ -88,11 +89,10 @@ fun MoreScreen(
 }
 
 /** Clickable modifier without ripple for list rows (kept in one place). */
-@Composable 
+@Composable
 private fun Modifier.clickableNoRipple(onClick: () -> Unit): Modifier =
-    this.then(
-        androidx.compose.foundation.clickable(
-            indication = null,
-            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-        ) { onClick() }
+    this.clickable(
+        indication = null,
+        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+        onClick = onClick
     )
