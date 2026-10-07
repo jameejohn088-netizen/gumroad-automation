@@ -105,18 +105,28 @@ dependencies {
 
 // App launcher icon: the PNG is stored as base64 text under src/main/iconb64
 // (binary files can't be pushed through the repo tooling), decoded into
-// src/main/res before resources are merged.
+// src/main/res before resources are merged. Paths are captured at configuration
+// time so the task never touches `project` during execution.
+val iconSrcDir = file("src/main/iconb64")
+val iconResDir = file("src/main/res")
 val decodeAppIcon = tasks.register("decodeAppIcon")
 decodeAppIcon.configure { task ->
     task.doLast { _ ->
-        val srcDir = project.file("src/main/iconb64")
-        val resDir = project.file("src/main/res")
-        for (f in srcDir.walkTopDown()) {
-            if (!f.isFile || f.extension != "b64") continue
-            val relPath = f.relativeTo(srcDir).invariantSeparatorsPath.removeSuffix(".b64")
-            val out = resDir.resolve(relPath)
-            out.parentFile.mkdirs()
-            out.writeBytes(java.util.Base64.getMimeDecoder().decode(f.readText()))
+        try {
+            if (!iconSrcDir.isDirectory) {
+                println("decodeAppIcon: icon source dir missing, skipping")
+            } else {
+                for (f in iconSrcDir.walkTopDown()) {
+                    if (!f.isFile || f.extension != "b64") continue
+                    val relPath = f.relativeTo(iconSrcDir).invariantSeparatorsPath.removeSuffix(".b64")
+                    val out = iconResDir.resolve(relPath)
+                    out.parentFile.mkdirs()
+                    out.writeBytes(java.util.Base64.getMimeDecoder().decode(f.readText().trim()))
+                }
+                println("decodeAppIcon: icons decoded")
+            }
+        } catch (e: Exception) {
+            println("decodeAppIcon WARNING: ${e.message}")
         }
     }
 }
