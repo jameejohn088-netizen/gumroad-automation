@@ -102,3 +102,20 @@ dependencies {
     // Unit tests (pure JVM)
     testImplementation(libs.junit)
 }
+
+// App launcher icon: the PNG is stored as base64 text under src/main/iconb64
+// (binary files can't be pushed through the repo tooling), decoded into
+// src/main/res before resources are merged.
+val decodeAppIcon by tasks.registering {
+    doLast {
+        val srcDir = file("src/main/iconb64")
+        val resDir = file("src/main/res")
+        srcDir.walkTopDown().filter { it.isFile && it.extension == "b64" }.forEach { f ->
+            val relPath = f.relativeTo(srcDir).invariantSeparatorsPath.removeSuffix(".b64")
+            val out = resDir.resolve(relPath)
+            out.parentFile.mkdirs()
+            out.writeBytes(java.util.Base64.getMimeDecoder().decode(f.readText()))
+        }
+    }
+}
+tasks.named("preBuild") { dependsOn("decodeAppIcon") }
