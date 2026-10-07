@@ -106,11 +106,13 @@ dependencies {
 // App launcher icon: the PNG is stored as base64 text under src/main/iconb64
 // (binary files can't be pushed through the repo tooling), decoded into
 // src/main/res before resources are merged.
-val decodeAppIcon by tasks.registering {
-    doLast {
-        val srcDir = file("src/main/iconb64")
-        val resDir = file("src/main/res")
-        srcDir.walkTopDown().filter { it.isFile && it.extension == "b64" }.forEach { f ->
+val decodeAppIcon = tasks.register("decodeAppIcon")
+decodeAppIcon.configure { task ->
+    task.doLast { _ ->
+        val srcDir = project.file("src/main/iconb64")
+        val resDir = project.file("src/main/res")
+        for (f in srcDir.walkTopDown()) {
+            if (!f.isFile || f.extension != "b64") continue
             val relPath = f.relativeTo(srcDir).invariantSeparatorsPath.removeSuffix(".b64")
             val out = resDir.resolve(relPath)
             out.parentFile.mkdirs()
@@ -118,4 +120,6 @@ val decodeAppIcon by tasks.registering {
         }
     }
 }
-tasks.named("preBuild") { dependsOn("decodeAppIcon") }
+tasks.named("preBuild").configure { task ->
+    task.dependsOn("decodeAppIcon")
+}
