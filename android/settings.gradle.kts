@@ -22,12 +22,21 @@ include(":app")
 // settings time, before any project is configured.
 val iconSrcDir = file("app/src/main/iconb64")
 val iconResDir = file("app/src/main/res")
-if (iconSrcDir.isDirectory) {
-    for (f in iconSrcDir.walkTopDown()) {
-        if (!f.isFile || !f.name.endsWith(".b64")) continue
-        val relPath = f.relativeTo(iconSrcDir).invariantSeparatorsPath.removeSuffix(".b64")
-        val out = iconResDir.resolve(relPath)
-        out.parentFile.mkdirs()
-        out.writeBytes(java.util.Base64.getMimeDecoder().decode(f.readText().trim()))
+val iconB64Files = if (iconSrcDir.isDirectory) {
+    iconSrcDir.walkTopDown().filter { it.isFile && it.name.endsWith(".b64") }.toList()
+} else emptyList()
+println("LAUNCHER_ICON: decoding ${iconB64Files.size} base64 icon files from ${iconSrcDir}")
+require(iconB64Files.isNotEmpty()) {
+    "LAUNCHER_ICON: no .b64 icon files found in ${iconSrcDir} — refusing to build an APK without the logo"
+}
+for (f in iconB64Files) {
+    val relPath = f.relativeTo(iconSrcDir).invariantSeparatorsPath.removeSuffix(".b64")
+    val out = iconResDir.resolve(relPath)
+    out.parentFile.mkdirs()
+    val bytes = java.util.Base64.getMimeDecoder().decode(f.readText().trim())
+    require(bytes.size > 1000 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte()) {
+        "LAUNCHER_ICON: decoded ${f.name} is not a valid PNG (${bytes.size} bytes)"
     }
+    out.writeBytes(bytes)
+    println("LAUNCHER_ICON: wrote ${out} (${bytes.size} bytes)")
 }
