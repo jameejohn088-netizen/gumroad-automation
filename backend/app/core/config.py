@@ -26,10 +26,19 @@ class Settings(BaseSettings):
 
     GUMROAD_CLIENT_ID: str = ""
     GUMROAD_CLIENT_SECRET: str = ""
-    GUMROAD_REDIRECT_URI: str = "http://localhost:8000/api/v1/gumroad/oauth/callback"
+    # Exact redirect URI registered in the Gumroad OAuth app. Empty means
+    # "derive from the current public base URL at request time" — required
+    # because the free tunnel URL rotates. The callback route is
+    # /api/v1/gumroad-accounts/oauth/callback.
+    GUMROAD_REDIRECT_URI: str = ""
     # OAuth endpoint paths — confirm in your Gumroad app settings if OAuth fails.
     GUMROAD_AUTHORIZE_URL: str = "https://gumroad.com/oauth/authorize"
     GUMROAD_TOKEN_URL: str = "https://gumroad.com/oauth/token"
+
+    # APK file served to buyers after a successful license verification.
+    APK_DOWNLOAD_PATH: str = ""
+    # Lifetime (minutes) of a license download token issued after verification.
+    LICENSE_DOWNLOAD_MINUTES: int = 30
 
     CORS_ORIGINS: str = "http://localhost:5173"
     PUBLIC_BASE_URL: str = ""

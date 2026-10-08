@@ -331,6 +331,33 @@ class License(Base, TimestampMixin):
     )
 
 
+# ------------------------------------------------- buyer licenses -------
+
+class LicenseGrant(Base, TimestampMixin):
+    """Buyer-facing license verification grants.
+
+    One row per verified Gumroad license key. The raw key is NEVER stored in
+    plaintext: only its SHA-256 (for lookup) and an AES-GCM ciphertext (for
+    silent re-verification) are kept. No Gumroad secrets live here — the
+    seller's OAuth token stays in gumroad_credentials.
+    Status: active | invalid | refunded | revoked | disabled.
+    """
+
+    __tablename__ = "license_grants"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    product_permalink: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    license_key_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    license_key_enc: Mapped[str] = mapped_column(Text, nullable=False)
+    key_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="active", nullable=False, index=True)
+    gumroad_purchase_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    product_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    buyer_email_masked: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    uses: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_verified_at: Mapped[datetime | None] = mapped_column(DT, nullable=True)
+
+
 # ------------------------------------------------------- webhooks ---------
 
 class WebhookSubscription(Base, TimestampMixin):

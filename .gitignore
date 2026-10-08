@@ -1,5 +1,12 @@
 .env
 *.env
+# Local-only secrets and tunnel artifacts — never commit these.
+TOKEN_MASTER_KEY.txt
+PUBLIC_URL.txt
+pinggy.log
+tunnel.log
+uvicorn.log
+watchdog.sh
 __pycache__/
 *.py[cod]
 .venv/

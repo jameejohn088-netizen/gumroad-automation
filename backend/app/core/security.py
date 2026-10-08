@@ -66,6 +66,31 @@ def decode_access_token(token: str, secret_key: str) -> dict | None:
     return payload
 
 
+# --- License download tokens (buyer APK access, short-lived) ---
+
+def create_license_download_token(grant_id: str, secret_key: str, minutes: int) -> str:
+    """JWT authorizing one license grant to download the APK. Not a login token."""
+    now = utcnow()
+    payload = {
+        "sub": grant_id,
+        "jti": str(uuid.uuid4()),
+        "type": "license_download",
+        "iat": now,
+        "exp": now + timedelta(minutes=minutes),
+    }
+    return jwt.encode(payload, secret_key, algorithm="HS256")
+
+
+def decode_license_download_token(token: str, secret_key: str) -> dict | None:
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+    if payload.get("type") != "license_download":
+        return None
+    return payload
+
+
 # --- Email masking for logs (never log raw emails) ---
 
 def mask_email(email: str | None) -> str:

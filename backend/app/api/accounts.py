@@ -2,7 +2,7 @@
 import secrets
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -186,48 +186,62 @@ def sync_history(account_id: str, db: Session = Depends(get_db),
 # ------------------------------------------------------- OAuth ------------
 
 @router.get("/{account_id}/oauth/start")
-def oauth_start(account_id: str, db: Session = Depends(get_db),
+def oauth_start(account_id: str, request: Request, db: Session = Depends(get_db),
                 user: User = Depends(get_current_user)):
-    """Begin OAuth 2.0 authorization-code flow. Token is exchanged server-side."""
+    """Begin OAuth 2.0 authorization-code flow. Token is exchanged server-side.
+
+    The redirect URI is derived from the current public base URL (it must
+    exactly match what is registered in the Gumroad app settings).
+    """
+    from app.api.license_access import redirect_uri as _redirect_uri
+
+    fresh = get_settings()
     acct = account_service._get_account(db, user.id, account_id)
     if not acct:
         raise HTTPException(status_code=404, detail="Account not found")
-    if not settings.GUMROAD_CLIENT_ID:
+    if not fresh.GUMROAD_CLIENT_ID:
         raise HTTPException(status_code=400,
                             detail="GUMROAD_CLIENT_ID is not configured; use manual token mode")
+    callback = _redirect_uri(request)
+    if not callback:
+        raise HTTPException(status_code=500, detail="Could not determine redirect URI")
     state = secrets.token_urlsafe(24)
-    acct.settings = {**(acct.settings or {}), "oauth_state": state}
+    acct.settings = {**(acct.settings or {}),
+                     "oauth_state": state, "oauth_redirect_uri": callback}
     db.commit()
     params = urlencode({
-        "client_id": settings.GUMROAD_CLIENT_ID,
-        "redirect_uri": settings.GUMROAD_REDIRECT_URI,
+        "client_id": fresh.GUMROAD_CLIENT_ID,
+        "redirect_uri": callback,
         "response_type": "code",
         "scope": "account view_sales edit_sales mark_sales_as_shipped edit_products",
         "state": f"{acct.id}:{state}",
     })
-    return {"authorize_url": f"{settings.GUMROAD_AUTHORIZE_URL}?{params}"}
+    return {"authorize_url": f"{fresh.GUMROAD_AUTHORIZE_URL}?{params}",
+            "redirect_uri": callback}
 
 
 @router.get("/oauth/callback")
 def oauth_callback(code: str | None = None, state: str | None = None,
                    db: Session = Depends(get_db)):
     """Exchange the authorization code for a token (server-side only)."""
-    import httpx
+    from app.gumroad.http import gumroad_http_client
 
+    fresh = get_settings()
     if not code or not state or ":" not in state:
         raise HTTPException(status_code=400, detail="Invalid OAuth callback")
     account_id, state_token = state.split(":", 1)
     acct = db.get(GumroadAccount, account_id)
     if not acct or (acct.settings or {}).get("oauth_state") != state_token:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
+    callback = (acct.settings or {}).get("oauth_redirect_uri") or fresh.GUMROAD_REDIRECT_URI
     try:
-        with httpx.Client(timeout=30) as http:
-            r = http.post(settings.GUMROAD_TOKEN_URL, data={
+        with gumroad_http_client(timeout=30) as http:
+            r = http.post(fresh.GUMROAD_TOKEN_URL, data={
                 "grant_type": "authorization_code",
                 "code": code,
-                "client_id": settings.GUMROAD_CLIENT_ID,
-                "client_secret": settings.GUMROAD_CLIENT_SECRET,
-                "redirect_uri": settings.GUMROAD_REDIRECT_URI,
+                "client_id": fresh.GUMROAD_CLIENT_ID,
+                "client_secret": fresh.GUMROAD_CLIENT_SECRET,
+                "redirect_uri": callback,
             })
             r.raise_for_status()
             token = r.json().get("access_token")
@@ -240,8 +254,47 @@ def oauth_callback(code: str | None = None, state: str | None = None,
     except GumroadAuthError:
         raise HTTPException(status_code=400, detail="Gumroad rejected the OAuth token")
     acct.auth_mode = "oauth"
-    acct.settings = {k: v for k, v in (acct.settings or {}).items() if k != "oauth_state"}
+    acct.settings = {k: v for k, v in (acct.settings or {}).items()
+                     if k not in ("oauth_state", "oauth_redirect_uri")}
     db.commit()
     log_activity(db, "gumroad_account.oauth_connected", user_id=acct.user_id,
                  account_id=acct.id)
     return {"ok": True, "account_id": acct.id}
+
+
+@router.get("/{account_id}/products/live")
+def products_live(account_id: str, db: Session = Depends(get_db),
+                  user: User = Depends(get_current_user)):
+    """Live product lookup via the stored OAuth/manual token (server-side only).
+
+    Returns sanitized product fields — the Gumroad access token never leaves
+    the server.
+    """
+    from app.gumroad.exceptions import GumroadError
+
+    acct = account_service._get_account(db, user.id, account_id)
+    if not acct:
+        raise HTTPException(status_code=404, detail="Account not found")
+    try:
+        client = account_service.get_client(db, acct)
+    except GumroadError:
+        raise HTTPException(status_code=400,
+                            detail="No token stored for this account. Connect it first.")
+    try:
+        products = []
+        for p in client.list_products():
+            products.append({
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "price_cents": p.get("price"),
+                "currency": p.get("currency"),
+                "permalink": p.get("custom_permalink") or p.get("short_url"),
+                "published": p.get("published"),
+            })
+            if len(products) >= 50:
+                break
+    except GumroadError as exc:
+        raise HTTPException(status_code=502, detail=f"Gumroad error: {exc}")
+    finally:
+        client.close()
+    return {"products": products}

@@ -20,6 +20,7 @@ from typing import Any, Iterator
 import httpx
 
 from app.core.security import mask_email
+from app.gumroad.http import gumroad_http_client
 from app.gumroad.exceptions import (
     GumroadAuthError,
     GumroadClientError,
@@ -98,7 +99,8 @@ class GumroadClient:
         self._token = access_token
         self._account_id = account_id
         self._limiter = _limiter_for(account_id, min_interval)
-        self._http = httpx.Client(base_url=BASE_URL, timeout=timeout, transport=transport)
+        self._http = gumroad_http_client(timeout=timeout, transport=transport,
+                                          base_url=BASE_URL)
 
     # ------------------------------------------------------------ core ----
 
