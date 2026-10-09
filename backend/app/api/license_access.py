@@ -280,3 +280,40 @@ document.getElementById('f').addEventListener('submit', async (e) => {
 def gumroad_setup_page():
     """Secure HTTPS form for Anna to paste her Gumroad app credentials (no chat)."""
     return SETUP_HTML
+
+
+@pages_router.get("/app-setup", response_class=HTMLResponse)
+def app_setup_page():
+    """Shows the current backend URL with a copy button for the Android app settings.
+
+    The tunnel URL rotates, so this page reads PUBLIC_URL.txt live — always fresh.
+    """
+    from pathlib import Path
+    try:
+        public_url = Path(__file__).resolve().parent.parent.parent.joinpath(
+            "PUBLIC_URL.txt").read_text().strip()
+    except OSError:
+        public_url = ""
+    api_url = f"{public_url}/api/v1" if public_url else ""
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App Setup — Backend URL</title>
+<style>
+body{{font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:0 16px;color:#1a1a2e}}
+.card{{border:1px solid #ddd;border-radius:12px;padding:20px}}
+code{{display:block;background:#f3f3f3;padding:12px;border-radius:8px;word-break:break-all;font-size:14px;margin:12px 0}}
+button{{width:100%;padding:12px;background:#4f46e5;color:#fff;border:0;border-radius:8px;font-size:16px}}
+#msg{{margin-top:12px;font-weight:600;color:green}}
+.small{{font-size:13px;color:#555;margin-top:12px}}
+</style></head>
+<body>
+<h1>Backend URL for the app</h1>
+<div class="card">
+<p class="small">Copy this URL, then in the app go to <b>Settings → Backend base URL</b>, paste it and tap <b>Save</b>.</p>
+<code id="url">{api_url or "URL not available — backend starting, refresh in a minute."}</code>
+<button onclick="navigator.clipboard.writeText(document.getElementById('url').textContent).then(()=>{{document.getElementById('msg').textContent='Copied!'}})">Copy URL</button>
+<div id="msg"></div>
+<p class="small">This URL changes from time to time. If the app says "No connection to the backend", open this page again and copy the fresh URL.</p>
+</div>
+</body></html>"""
