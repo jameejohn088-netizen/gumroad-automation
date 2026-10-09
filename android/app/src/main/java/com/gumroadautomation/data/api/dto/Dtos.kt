@@ -67,7 +67,12 @@ data class GumroadAccountDto(
     val name: String,
     /** connected | needs_reconnect | error | disabled */
     val status: String,
+    @SerializedName("auth_mode") val authMode: String? = null,
+    @SerializedName("gumroad_user_name") val gumroadUserName: String? = null,
     @SerializedName("last_sync_at") val lastSyncAt: String? = null,
+    @SerializedName("token_last4") val tokenLast4: String? = null,
+    @SerializedName("last_error") val lastError: String? = null,
+    @SerializedName("last_error_at") val lastErrorAt: String? = null,
     @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("updated_at") val updatedAt: String? = null,
 )
@@ -78,6 +83,12 @@ data class UpdateAccountRequest(val name: String? = null)
 
 data class ConnectManualRequest(
     @SerializedName("access_token") val accessToken: String,
+)
+
+data class TestConnectionResponse(
+    val ok: Boolean,
+    @SerializedName("gumroad_user") val gumroadUser: String? = null,
+    val error: String? = null,
 )
 
 data class SyncEnqueueResponse(

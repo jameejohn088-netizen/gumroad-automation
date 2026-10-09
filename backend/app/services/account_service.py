@@ -4,6 +4,7 @@ enable / disable / remove (cascade). Tokens encrypted at rest (AES-GCM).
 401 from Gumroad -> account marked 'needs_reconnect' + user notified.
 """
 import logging
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -102,6 +103,67 @@ def mark_needs_reconnect(db: Session, account: GumroadAccount, reason: str = "40
                kind="warning", account_id=account.id)
         log_activity(db, "gumroad_account.needs_reconnect", user_id=account.user_id,
                      account_id=account.id, detail={"reason": reason})
+
+
+def record_error(db: Session, account: GumroadAccount, message: str) -> None:
+    """Store the last Gumroad API error on the account for the dashboard."""
+    account.status = "error"
+    account.last_error = message[:500]
+    account.last_error_at = datetime.now(timezone.utc)
+    db.commit()
+    log_activity(db, "gumroad_account.error", user_id=account.user_id,
+                 account_id=account.id, detail={"error": message[:200]})
+
+
+def clear_error(db: Session, account: GumroadAccount) -> None:
+    """Clear the stored error after a successful Gumroad call."""
+    if account.last_error or account.status == "error":
+        account.last_error = None
+        account.last_error_at = None
+        if account.status == "error":
+            account.status = "connected" if account.credential else "needs_reconnect"
+        db.commit()
+
+
+def test_connection(db: Session, user_id: str, account_id: str,
+                    transport=None) -> dict:
+    """Validate the stored token with GET /v2/user (read-only, no test data touched).
+
+    Returns {"ok": True, "gumroad_user": ...} on success, or
+    {"ok": False, "error": ...} on failure. Updates the account's
+    status/last_error so the dashboard reflects the result.
+    """
+    acct = _get_account(db, user_id, account_id)
+    if acct is None:
+        raise LookupError("account not found")
+    if acct.credential is None:
+        record_error(db, acct, "no credentials stored for this account")
+        return {"ok": False, "error": "no credentials stored for this account"}
+    try:
+        client = get_client(db, acct, transport=transport)
+    except GumroadError as exc:
+        record_error(db, acct, str(exc))
+        return {"ok": False, "error": str(exc)}
+    try:
+        user_info = client.get_user()
+    except GumroadAuthError as exc:
+        mark_needs_reconnect(db, acct, f"401 during connection test: {exc}")
+        record_error(db, acct, f"Gumroad rejected the token: {exc}")
+        return {"ok": False, "error": f"Gumroad rejected the token: {exc}"}
+    except GumroadError as exc:
+        record_error(db, acct, str(exc))
+        return {"ok": False, "error": str(exc)}
+    finally:
+        client.close()
+    clear_error(db, acct)
+    user_block = user_info.get("user") or {}
+    acct.gumroad_user_name = user_block.get("name") or user_block.get("display_name")
+    acct.gumroad_user_id = str(user_block.get("user_id") or user_block.get("id") or "")
+    db.commit()
+    db.refresh(acct)
+    log_activity(db, "gumroad_account.test_connection", user_id=user_id,
+                 account_id=acct.id, detail={"ok": True})
+    return {"ok": True, "gumroad_user": acct.gumroad_user_name}
 
 
 def disconnect(db: Session, user_id: str, account_id: str) -> GumroadAccount:

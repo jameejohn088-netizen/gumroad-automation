@@ -81,6 +81,8 @@ class GumroadAccountOut(BaseModel):
     gumroad_user_name: str | None
     last_sync_at: datetime | None
     token_last4: str | None = None
+    last_error: str | None = None
+    last_error_at: datetime | None = None
     created_at: datetime
 
 

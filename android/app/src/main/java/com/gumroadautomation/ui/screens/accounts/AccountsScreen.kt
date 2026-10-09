@@ -101,6 +101,25 @@ class AccountsViewModel @Inject constructor(
     fun connectManual(id: String, token: String) =
         runAction(accountRepository.connectManual(id, token), "Account connected")
 
+    fun testConnection(id: String) {
+        viewModelScope.launch {
+            accountRepository.testConnection(id).collect { result ->
+                when (result) {
+                    is ApiResult.Loading -> Unit
+                    is ApiResult.Success -> {
+                        _actionMessage.value = if (result.data.ok) {
+                            "Connection OK" + (result.data.gumroadUser?.let { " ($it)" } ?: "")
+                        } else {
+                            "Connection failed: ${result.data.error}"
+                        }
+                        refresh()
+                    }
+                    is ApiResult.Error -> _actionMessage.value = result.message
+                }
+            }
+        }
+    }
+
     fun disconnect(id: String) =
         runAction(accountRepository.disconnect(id), "Account disconnected")
 
@@ -181,6 +200,7 @@ fun AccountsScreen(
                                 AccountCard(
                                     account = account,
                                     onConnect = { connectTarget = account },
+                                    onTestConnection = { viewModel.testConnection(account.id) },
                                     onDisconnect = { viewModel.disconnect(account.id) },
                                     onReconnect = { viewModel.reconnect(account.id) },
                                     onEnable = { viewModel.enable(account.id) },
@@ -280,6 +300,7 @@ fun AccountsScreen(
 private fun AccountCard(
     account: GumroadAccountDto,
     onConnect: () -> Unit,
+    onTestConnection: () -> Unit,
     onDisconnect: () -> Unit,
     onReconnect: () -> Unit,
     onEnable: () -> Unit,
@@ -298,11 +319,25 @@ private fun AccountCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(account.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    account.gumroadUserName?.let {
+                        Text(
+                            "Gumroad: $it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Text(
                         "Last sync: ${DateUtils.formatDateTime(account.lastSyncAt)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    account.lastError?.let { err ->
+                        Text(
+                            "Error: $err",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
                 StatusBadge(account.status)
                 androidx.compose.foundation.layout.Box {
@@ -314,6 +349,10 @@ private fun AccountCard(
                         DropdownMenuItem(
                             text = { Text("Connect / update token") },
                             onClick = { menuExpanded = false; onConnect() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Test connection") },
+                            onClick = { menuExpanded = false; onTestConnection() },
                         )
                         DropdownMenuItem(
                             text = { Text("Sync now") },

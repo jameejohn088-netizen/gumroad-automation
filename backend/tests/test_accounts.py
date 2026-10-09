@@ -108,3 +108,62 @@ def test_sync_history_recorded(client, auth_headers, mock_gumroad, db):
     assert len(hist) == 1
     assert hist[0]["status"] == "success"
     assert hist[0]["items_synced"] > 0
+
+
+def test_test_connection_ok(client, auth_headers, mock_gumroad, db):
+    headers, _ = auth_headers()
+    acct = _create(client, headers)
+    client.post(f"/api/v1/gumroad-accounts/{acct['id']}/connect-manual",
+                headers=headers, json={"access_token": "good-token"})
+    r = client.post(f"/api/v1/gumroad-accounts/{acct['id']}/test-connection",
+                    headers=headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True
+    assert body["gumroad_user"] == "Fixture Seller"
+    # Dashboard fields: no error recorded, status connected.
+    row = db.get(GumroadAccount, acct["id"])
+    assert row.status == "connected"
+    assert row.last_error is None
+
+
+def test_test_connection_bad_token_records_error(client, auth_headers, mock_gumroad, db):
+    headers, _ = auth_headers()
+    acct = _create(client, headers)
+    client.post(f"/api/v1/gumroad-accounts/{acct['id']}/connect-manual",
+                headers=headers, json={"access_token": "good-token"})
+    # Corrupt the stored token so the live check fails.
+    from app.security.encryption import encrypt_token
+    row = db.get(GumroadAccount, acct["id"])
+    ct, kv = encrypt_token("bad-token")
+    row.credential.encrypted_token = ct
+    db.commit()
+    r = client.post(f"/api/v1/gumroad-accounts/{acct['id']}/test-connection",
+                    headers=headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["ok"] is False
+    db.refresh(row)
+    assert row.last_error is not None
+    assert row.last_error_at is not None
+
+
+def test_test_connection_no_credentials(client, auth_headers, mock_gumroad):
+    headers, _ = auth_headers()
+    acct = _create(client, headers)
+    r = client.post(f"/api/v1/gumroad-accounts/{acct['id']}/test-connection",
+                    headers=headers)
+    assert r.status_code == 200
+    assert r.json()["ok"] is False
+    assert "no credentials" in r.json()["error"]
+
+
+def test_account_isolation_between_users(client, auth_headers, mock_gumroad):
+    """One user cannot touch another user's account (404, no leak)."""
+    headers_a, _ = auth_headers()
+    headers_b, _ = auth_headers()
+    acct = _create(client, headers_a, "User A Store")
+    r = client.get(f"/api/v1/gumroad-accounts/{acct['id']}", headers=headers_b)
+    assert r.status_code == 404
+    r = client.post(f"/api/v1/gumroad-accounts/{acct['id']}/test-connection",
+                    headers=headers_b)
+    assert r.status_code == 404

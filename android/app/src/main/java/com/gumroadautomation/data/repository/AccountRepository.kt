@@ -5,6 +5,7 @@ import com.gumroadautomation.data.api.dto.ConnectManualRequest
 import com.gumroadautomation.data.api.dto.CreateAccountRequest
 import com.gumroadautomation.data.api.dto.GumroadAccountDto
 import com.gumroadautomation.data.api.dto.SyncHistoryDto
+import com.gumroadautomation.data.api.dto.TestConnectionResponse
 import com.gumroadautomation.data.api.dto.UpdateAccountRequest
 import com.gumroadautomation.data.db.AppDatabase
 import com.gumroadautomation.util.ApiResult
@@ -111,6 +112,21 @@ class AccountRepository @Inject constructor(
     fun reconnect(accountId: String) = accountAction(accountId) { reconnect(it) }
     fun enable(accountId: String) = accountAction(accountId) { enable(it) }
     fun disable(accountId: String) = accountAction(accountId) { disable(it) }
+
+    /** Read-only connection test: validates the stored token via GET /v2/user. */
+    fun testConnection(accountId: String): Flow<ApiResult<TestConnectionResponse>> =
+        flow {
+            emit(ApiResult.Loading)
+            try {
+                val res = apiProvider.service().testConnection(accountId)
+                if (res.isSuccessful) emit(ApiResult.Success(res.body()!!))
+                else emit(ApiResult.Error(parseError(res)))
+            } catch (e: IOException) {
+                emit(ApiResult.Error(networkError(e)))
+            } catch (_: Exception) {
+                emit(ApiResult.Error("Connection test failed. Please try again."))
+            }
+        }.flowOn(Dispatchers.IO)
 
     /** Remove with cascade: also drops this account's cached rows on-device. */
     fun deleteAccount(accountId: String): Flow<ApiResult<String>> = flow {

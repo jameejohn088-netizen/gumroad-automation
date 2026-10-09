@@ -30,7 +30,8 @@ def _out(db: Session, acct: GumroadAccount) -> GumroadAccountOut:
     return GumroadAccountOut(
         id=acct.id, name=acct.name, status=acct.status, auth_mode=acct.auth_mode,
         gumroad_user_name=acct.gumroad_user_name, last_sync_at=acct.last_sync_at,
-        token_last4=token_last4, created_at=acct.created_at,
+        token_last4=token_last4, last_error=acct.last_error,
+        last_error_at=acct.last_error_at, created_at=acct.created_at,
     )
 
 
@@ -120,6 +121,21 @@ def reconnect(account_id: str, body: ConnectManualIn, db: Session = Depends(get_
     except GumroadAuthError:
         raise HTTPException(status_code=400, detail="Gumroad rejected that token.")
     return _out(db, acct)
+
+
+@router.post("/{account_id}/test-connection")
+def test_connection(account_id: str, db: Session = Depends(get_db),
+                    user: User = Depends(get_current_user)):
+    """Read-only connection test: validates the stored token via GET /v2/user.
+
+    No test data is touched and nothing is modified on Gumroad. The result is
+    also stored on the account (status + last_error) so the dashboard shows it.
+    """
+    try:
+        result = account_service.test_connection(db, user.id, account_id)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return result
 
 
 @router.post("/{account_id}/enable", response_model=GumroadAccountOut)

@@ -240,7 +240,9 @@ def sync_account(
 ) -> dict:
     """Run a sync for one account. Returns a summary dict. Never raises
     GumroadAuthError to the caller — it marks the account needs_reconnect."""
-    from app.services.account_service import get_client, mark_needs_reconnect
+    from app.services.account_service import (
+        clear_error, get_client, mark_needs_reconnect, record_error,
+    )
 
     account = db.get(GumroadAccount, account_id)
     if account is None:
@@ -299,6 +301,7 @@ def sync_account(
         hist.items_synced = items
         hist.finished_at = _utcnow()
         db.commit()
+        clear_error(db, account)
     except GumroadAuthError as exc:
         db.rollback()
         hist.status = "failed"
@@ -313,6 +316,7 @@ def sync_account(
         hist.error = str(exc)[:500]
         hist.finished_at = _utcnow()
         db.commit()
+        record_error(db, account, f"sync failed: {exc}")
         log.exception("sync failed account=%s", account.id)
         return {"status": "failed", "error": str(exc)[:500], "items_synced": items}
 

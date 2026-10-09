@@ -137,6 +137,9 @@ class GumroadAccount(Base, TimestampMixin):
     gumroad_user_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     gumroad_user_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     last_sync_at: Mapped[datetime | None] = mapped_column(DT, nullable=True)
+    # Last Gumroad API error surfaced on the account (status + message for the dashboard).
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_error_at: Mapped[datetime | None] = mapped_column(DT, nullable=True)
     settings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="gumroad_accounts")

@@ -32,6 +32,7 @@ import com.gumroadautomation.data.api.dto.SignupRequest
 import com.gumroadautomation.data.api.dto.SubscriberDto
 import com.gumroadautomation.data.api.dto.SyncEnqueueResponse
 import com.gumroadautomation.data.api.dto.SyncHistoryDto
+import com.gumroadautomation.data.api.dto.TestConnectionResponse
 import com.gumroadautomation.data.api.dto.UpdateAccountRequest
 import com.gumroadautomation.data.api.dto.UpdateProfileRequest
 import com.gumroadautomation.data.api.dto.UserDto
@@ -112,6 +113,9 @@ interface ApiService {
 
     @POST("gumroad-accounts/{id}/reconnect")
     suspend fun reconnect(@Path("id") id: String): Response<GumroadAccountDto>
+
+    @POST("gumroad-accounts/{id}/test-connection")
+    suspend fun testConnection(@Path("id") id: String): Response<TestConnectionResponse>
 
     @POST("gumroad-accounts/{id}/enable")
     suspend fun enable(@Path("id") id: String): Response<GumroadAccountDto>
