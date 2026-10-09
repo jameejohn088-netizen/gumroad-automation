@@ -286,13 +286,19 @@ def sync_account(
                 items += _sync_licenses_from_sales(db, account)
                 db.commit()
             if sync_type in ("full", "subscribers"):
-                for s in client.list_subscribers():
-                    sub, created = _upsert_subscriber(db, account, s)
-                    db.flush()
-                    items += 1
-                    if created:
-                        events.append(("new_subscriber", {"subscriber_id": sub.id}))
-                db.commit()
+                try:
+                    for s in client.list_subscribers():
+                        sub, created = _upsert_subscriber(db, account, s)
+                        db.flush()
+                        items += 1
+                        if created:
+                            events.append(("new_subscriber", {"subscriber_id": sub.id}))
+                    db.commit()
+                except GumroadError as exc:
+                    # /subscribers is not available on all Gumroad accounts (404).
+                    # Don't fail the whole sync — products/sales already saved.
+                    db.rollback()
+                    log.warning("subscribers sync skipped account=%s: %s", account.id, exc)
         finally:
             client.close()
 
