@@ -259,6 +259,9 @@ export const api = {
     request<DashboardData>('/dashboard', { query: { account_id } }),
   analytics: (p: { account_id?: string; preset?: string; start_date?: string; end_date?: string } = {}) =>
     request<AnalyticsData>('/dashboard/analytics', { query: { ...p } }),
+  accountComparison: (p: { preset?: string; start_date?: string; end_date?: string } = {}) =>
+    request('/dashboard/account-comparison', { query: { ...p } }),
+  diagnostics: () => request('/diagnostics'),
 
   // ---- Catalog ----
   products: (p: ListParams = {}) => request<Paginated<Product>>('/products', { query: { ...p } }),

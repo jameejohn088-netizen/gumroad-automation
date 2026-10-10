@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app.api import accounts, actions, automation, auth, catalog, dashboard, export, jobs, license_access, notifications, webhooks
+from app.api import accounts, actions, automation, auth, catalog, dashboard, diagnostics, export, jobs, license_access, notifications, webhooks
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import new_correlation_id
@@ -73,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router, prefix="/api/v1")
     app.include_router(notifications.router, prefix="/api/v1")
     app.include_router(webhooks.router, prefix="/api/v1")
+    app.include_router(diagnostics.router, prefix="/api/v1")
     app.include_router(license_access.router)
     app.include_router(license_access.pages_router)
 

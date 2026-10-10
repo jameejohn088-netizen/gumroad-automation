@@ -5,6 +5,7 @@ import Accounts from './pages/Accounts';
 import Automations from './pages/Automations';
 import Customers from './pages/Customers';
 import Dashboard from './pages/Dashboard';
+import Diagnostics from './pages/Diagnostics';
 import ForgotPassword from './pages/ForgotPassword';
 import Licenses from './pages/Licenses';
 import Login from './pages/Login';
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="scheduler" element={<Scheduler />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="logs" element={<Logs />} />
+          <Route path="diagnostics" element={<Diagnostics />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Route>

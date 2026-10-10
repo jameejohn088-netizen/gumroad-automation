@@ -18,6 +18,7 @@ const NAV = [
   { to: '/scheduler', label: 'Scheduler' },
   { to: '/notifications', label: 'Notifications' },
   { to: '/logs', label: 'Logs' },
+  { to: '/diagnostics', label: 'Diagnostics' },
   { to: '/settings', label: 'Settings' },
 ];
 

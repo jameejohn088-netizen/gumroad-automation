@@ -27,6 +27,10 @@ def get_scheduler() -> BackgroundScheduler | None:
     return _scheduler
 
 
+def is_running() -> bool:
+    return _scheduler is not None and _scheduler.running
+
+
 def start_scheduler() -> BackgroundScheduler | None:
     global _scheduler
     settings = get_settings()
