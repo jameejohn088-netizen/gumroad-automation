@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse
@@ -317,3 +318,136 @@ button{{width:100%;padding:12px;background:#4f46e5;color:#fff;border:0;border-ra
 <p class="small">This URL changes from time to time. If the app says "No connection to the backend", open this page again and copy the fresh URL.</p>
 </div>
 </body></html>"""
+
+
+# ------------------------------------------------ GitHub PAT + gist setup
+# Lets Anna paste a GitHub fine-grained PAT (Gists read/write) over HTTPS.
+# The backend validates it, stores it in .env, creates a PUBLIC gist holding
+# the current tunnel URL, and the watchdog keeps that gist fresh on rotation.
+# The Android app reads the gist's raw URL to auto-update its backend URL.
+
+class GithubPatIn(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=1, max_length=200)
+    pat: str = Field(min_length=10, max_length=500)
+
+
+def _github_api(pat: str):
+    from app.gumroad.http import gumroad_http_client
+    return gumroad_http_client(), {"Authorization": f"Bearer {pat.strip()}",
+                                   "Accept": "application/vnd.github+json"}
+
+
+@router.post("/admin/github-pat")
+def save_github_pat(body: GithubPatIn, request: Request,
+                    db: Session = Depends(get_db)):
+    """Validate Anna's GitHub PAT, store it, and create the public URL gist.
+
+    Authenticated with Anna's backend email+password (never in chat).
+    The PAT is never logged and never returned.
+    """
+    ip = request.client.host if request.client else "unknown"
+    check_rate_limit(f"github-pat:{ip}", 10, 3600)
+    user = auth_service.authenticate(db, body.email.strip(), body.password)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=401, detail="Backend email or password is incorrect.")
+    pat = body.pat.strip()
+    client, headers = _github_api(pat)
+    try:
+        r = client.get("https://api.github.com/user", headers=headers)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"GitHub unreachable: {exc}")
+    if r.status_code != 200:
+        raise HTTPException(status_code=400,
+                            detail="GitHub token invalid. Fine-grained PAT with Gists read/write chahiye.")
+    # Create (or reuse) the public gist holding the backend URL.
+    try:
+        public_url = Path(__file__).resolve().parent.parent.parent.joinpath(
+            "PUBLIC_URL.txt").read_text().strip()
+    except OSError:
+        public_url = ""
+    gist_id = os.environ.get("GIST_ID", "")
+    if gist_id:
+        gr = client.patch(f"https://api.github.com/gists/{gist_id}", headers=headers,
+                          json={"files": {"backend-url.txt": {"content": public_url}}})
+    else:
+        gr = client.post("https://api.github.com/gists", headers=headers,
+                         json={"description": "Gumroad Automation backend URL (auto-updated)",
+                               "public": True,
+                               "files": {"backend-url.txt": {"content": public_url}}})
+    if gr.status_code not in (200, 201):
+        raise HTTPException(status_code=502,
+                            detail="Gist create/update failed. Token me Gists permission check karo.")
+    gist_id = gr.json()["id"]
+    raw_url = f"https://gist.githubusercontent.com/{gr.json()['owner']['login']}/{gist_id}/raw/backend-url.txt"
+    _write_env_vars({"GITHUB_PAT": pat, "GIST_ID": gist_id, "GIST_RAW_URL": raw_url})
+    log.info("github PAT + gist saved by user=%s gist=%s", user.email, gist_id)
+    return {"ok": True, "gist_id": gist_id, "raw_url": raw_url}
+
+
+GITHUB_SETUP_HTML = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto-Update Setup</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:0 16px;color:#1a1a2e}
+h1{font-size:22px}.card{border:1px solid #ddd;border-radius:12px;padding:20px}
+label{display:block;margin:12px 0 4px;font-weight:600}input{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;box-sizing:border-box}
+button{margin-top:16px;width:100%;padding:12px;background:#4f46e5;color:#fff;border:0;border-radius:8px;font-size:16px}
+#msg{margin-top:12px;font-weight:600}.ok{color:green}.err{color:#b00020}
+.small{font-size:13px;color:#555;margin-top:12px}
+ol.small li{margin-bottom:8px}
+</style></head>
+<body>
+<h1>Auto-update setup (ek dafa)</h1>
+<div class="card">
+<p class="small">Iske baad app khud naya backend URL utha legi — tumhe kuch nahi karna padega.</p>
+<ol class="small">
+<li><a href="https://github.com/settings/tokens?type=beta" target="_blank">Yahan</a> se <b>fine-grained PAT</b> banao (expiry 30 din), sirf <b>Gists → Read and write</b> permission do.</li>
+<li>Neeche apna <b>backend login</b> aur wo token paste karo.</li>
+</ol>
+<form id="f">
+<label>Backend email</label><input id="email" type="email" required autocomplete="username">
+<label>Backend password</label><input id="password" type="password" required autocomplete="current-password">
+<label>GitHub token (PAT)</label><input id="pat" type="password" required autocomplete="off" placeholder="github_pat_...">
+<button type="submit">Save securely</button>
+</form>
+<div id="msg"></div>
+</div>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('msg');
+  msg.className = ''; msg.textContent = 'Saving...';
+  const body = {
+    email: document.getElementById('email').value.trim(),
+    password: document.getElementById('password').value,
+    pat: document.getElementById('pat').value.trim(),
+  };
+  try {
+    const r = await fetch('/api/v1/admin/github-pat', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)});
+    const j = await r.json();
+    if (r.ok && j.ok) {
+      msg.className = 'ok';
+      msg.textContent = 'Ho gaya! Ab nayi APK install karo — uske baad URL khud update hoga.';
+      document.getElementById('pat').value = '';
+      document.getElementById('password').value = '';
+    } else {
+      msg.className = 'err';
+      msg.textContent = 'Error: ' + (j.detail || r.status);
+    }
+  } catch (err) {
+    msg.className = 'err'; msg.textContent = 'Network error: ' + err;
+  }
+});
+</script>
+</body></html>
+"""
+
+
+@pages_router.get("/github-setup", response_class=HTMLResponse)
+def github_setup_page():
+    """Secure HTTPS form for Anna to paste her GitHub PAT (no chat)."""
+    return GITHUB_SETUP_HTML
