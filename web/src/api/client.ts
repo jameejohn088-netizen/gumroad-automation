@@ -28,7 +28,11 @@ import type {
 } from './types';
 
 const RAW_BASE = import.meta.env.VITE_API_URL as string | undefined;
-export const API_BASE = (RAW_BASE && RAW_BASE.trim() ? RAW_BASE : 'http://localhost:8000/api/v1').replace(
+// When served from the backend (same origin), talk to that origin's /api/v1
+// automatically — this survives tunnel URL rotations without a rebuild.
+const SAME_ORIGIN_BASE =
+  typeof window !== 'undefined' ? `${window.location.origin}/api/v1` : '';
+export const API_BASE = (RAW_BASE && RAW_BASE.trim() ? RAW_BASE : (SAME_ORIGIN_BASE || 'http://localhost:8000/api/v1')).replace(
   /\/+$/,
   '',
 );

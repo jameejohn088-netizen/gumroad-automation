@@ -76,6 +76,32 @@ def create_app() -> FastAPI:
     app.include_router(license_access.router)
     app.include_router(license_access.pages_router)
 
+    # Serve the React web dashboard (web/dist) as a single-page app.
+    # API routes above take precedence; unknown non-API paths get index.html
+    # so React Router handles them. The SPA talks to {origin}/api/v1, so it
+    # survives tunnel URL rotations without a rebuild.
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+    WEB_DIST = Path(__file__).resolve().parent.parent.parent / "web" / "dist"
+    if WEB_DIST.is_dir():
+        assets_dir = WEB_DIST / "assets"
+        if assets_dir.is_dir():
+            app.mount("/assets", StaticFiles(directory=assets_dir), name="web-assets")
+        _SPA_SKIP = ("api/", "docs", "openapi.json", "health",
+                     "gumroad-setup", "app-setup", "github-setup", "assets/")
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def serve_spa(full_path: str):
+            if full_path.startswith(_SPA_SKIP):
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404, detail="Not found")
+            index = WEB_DIST / "index.html"
+            if index.is_file():
+                return FileResponse(index, media_type="text/html")
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Web dashboard not built")
+
     @app.on_event("startup")
     def _startup():
         # Create tables if migrations haven't run (dev convenience; alembic is canonical).
