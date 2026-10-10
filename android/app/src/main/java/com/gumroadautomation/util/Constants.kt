@@ -26,4 +26,11 @@ object Constants {
     const val STATUS_NEEDS_RECONNECT = "needs_reconnect"
     const val STATUS_ERROR = "error"
     const val STATUS_DISABLED = "disabled"
+
+    /**
+     * Public gist raw URL holding the current backend base URL (one line, e.g.
+     * "https://xxx.free.pinggy.net"). The watchdog keeps it fresh on rotation.
+     * Empty until the /github-setup step is done — then auto-update is active.
+     */
+    const val GIST_RAW_URL = ""
 }

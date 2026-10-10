@@ -5,13 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.gumroadautomation.data.datastore.SessionManager
 import com.gumroadautomation.data.repository.AuthRepository
 import com.gumroadautomation.util.ApiResult
+import com.gumroadautomation.util.Constants
 import com.gumroadautomation.util.Validators
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 import javax.inject.Inject
 
 /** Shared ViewModel for all auth screens (login/signup/forgot/reset/verify). */
@@ -43,6 +48,59 @@ class AuthViewModel @Inject constructor(
     fun loadBackendUrl() {
         viewModelScope.launch {
             backendUrl.value = sessionManager.baseUrl.first()
+            // Silently pick up a rotated tunnel URL so Anna never has to paste it.
+            refreshBackendUrlFromGist(quiet = true)
+        }
+    }
+
+    /**
+     * Fetches the current backend URL from the public gist (kept fresh by the
+     * server watchdog). If it differs from the stored URL, updates storage and
+     * the text field. Returns true when the URL was changed.
+     */
+    suspend fun refreshBackendUrlFromGist(quiet: Boolean = false): Boolean {
+        val gistUrl = Constants.GIST_RAW_URL
+        if (gistUrl.isBlank()) return false
+        return try {
+            val raw = withContext(Dispatchers.IO) {
+                val conn = URL(gistUrl).openConnection() as HttpURLConnection
+                conn.connectTimeout = 10000
+                conn.readTimeout = 10000
+                conn.requestMethod = "GET"
+                try {
+                    conn.inputStream.bufferedReader().readText().trim()
+                } finally {
+                    conn.disconnect()
+                }
+            }
+            if (!raw.startsWith("https://")) return false
+            val apiUrl = "$raw/api/v1"
+            val current = sessionManager.baseUrl.first()
+            if (current != apiUrl) {
+                sessionManager.setBaseUrl(apiUrl)
+                backendUrl.value = apiUrl
+                if (!quiet) {
+                    _info.value = "Backend URL auto-updated. You can log in now."
+                    _urlSaved.value = true
+                }
+                true
+            } else false
+        } catch (e: Exception) {
+            // Keep the existing URL — gist unreachable or tunnel mid-rotation.
+            false
+        }
+    }
+
+    /** Manual "check for new URL" hook for the UI (used after a connection error). */
+    fun checkForUrlUpdate() {
+        viewModelScope.launch {
+            _busy.value = true
+            _error.value = null
+            val changed = refreshBackendUrlFromGist(quiet = false)
+            _busy.value = false
+            if (!changed && _info.value == null) {
+                _info.value = "Backend URL is already up to date."
+            }
         }
     }
 

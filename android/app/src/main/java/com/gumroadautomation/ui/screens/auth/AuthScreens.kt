@@ -87,6 +87,12 @@ fun BackendUrlField(viewModel: AuthViewModel) {
         onClick = { viewModel.saveBackendUrl() },
         modifier = Modifier.fillMaxWidth(),
     ) { Text(if (urlSaved) "Backend URL saved ✓" else "Save backend URL") }
+    Spacer(Modifier.height(8.dp))
+    // Auto-update fallback: if the tunnel rotated, one tap fetches the fresh URL.
+    TextButton(
+        onClick = { viewModel.checkForUrlUpdate() },
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text("Check for updated URL") }
     Spacer(Modifier.height(12.dp))
 }
 
