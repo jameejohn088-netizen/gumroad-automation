@@ -10,6 +10,7 @@ import type {
   AutomationRule,
   AutomationRuleInput,
   DashboardData,
+  AnalyticsData,
   ErrorLog,
   GumroadAccount,
   Job,
@@ -256,6 +257,8 @@ export const api = {
   // ---- Dashboard ----
   dashboard: (account_id?: string) =>
     request<DashboardData>('/dashboard', { query: { account_id } }),
+  analytics: (p: { account_id?: string; preset?: string; start_date?: string; end_date?: string } = {}) =>
+    request<AnalyticsData>('/dashboard/analytics', { query: { ...p } }),
 
   // ---- Catalog ----
   products: (p: ListParams = {}) => request<Paginated<Product>>('/products', { query: { ...p } }),

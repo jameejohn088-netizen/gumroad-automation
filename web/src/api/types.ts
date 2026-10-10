@@ -125,6 +125,35 @@ export interface DashboardData {
   recent_sales: Sale[];
 }
 
+export interface AnalyticsProduct {
+  product_id: string;
+  name: string;
+  price_cents: number;
+  permalink: string | null;
+  published: boolean;
+  gross_cents: number;
+  sales_count: number;
+}
+
+export interface AnalyticsDay {
+  date: string;
+  gross_cents: number;
+  sales_count: number;
+}
+
+export interface AnalyticsData {
+  gross_cents: number;
+  refunded_cents: number;
+  net_cents: number;
+  sales_count: number;
+  refunded_count: number;
+  disputed_count: number;
+  per_product: AnalyticsProduct[];
+  daily_trend: AnalyticsDay[];
+  no_sale_products: { product_id: string; name: string }[];
+  range: { preset: string; start: string | null; end: string | null };
+}
+
 export type RuleTrigger =
   | 'new_sale'
   | 'refund'
