@@ -22,6 +22,20 @@ def list_notifications(db: Session = Depends(get_db),
     return rows
 
 
+@router.post("/notifications/read-all")
+def mark_all_read(db: Session = Depends(get_db),
+                  user: User = Depends(get_current_user)):
+    """Mark all of the user's notifications as read."""
+    from app.core.security import utcnow
+    now = utcnow()
+    rows = db.scalars(select(Notification).where(
+        Notification.user_id == user.id, Notification.read_at.is_(None))).all()
+    for n in rows:
+        n.read_at = now
+    db.commit()
+    return {"ok": True, "marked": len(rows)}
+
+
 @router.post("/notifications/{notification_id}/read")
 def mark_read(notification_id: str, db: Session = Depends(get_db),
               user: User = Depends(get_current_user)):

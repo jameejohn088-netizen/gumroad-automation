@@ -161,6 +161,22 @@ class SalesViewModel @Inject constructor(
         }
     }
 
+    fun resendReceipt(saleId: String, dryRun: Boolean) {
+        viewModelScope.launch {
+            catalogRepository.resendReceipt(saleId, dryRun).collect { result ->
+                when (result) {
+                    is ApiResult.Loading -> Unit
+                    is ApiResult.Success ->
+                        _actionResult.value = result.data.message.ifEmpty {
+                            if (result.data.dryRun) "Dry run: receipt would be resent."
+                            else "Receipt resent."
+                        }
+                    is ApiResult.Error -> _actionResult.value = result.message
+                }
+            }
+        }
+    }
+
     private fun load(reset: Boolean) {
         if (reset) {
             page = 1
@@ -284,6 +300,7 @@ fun SalesScreen(
             onDismiss = { detailSale = null },
             onRefund = { dryRun -> viewModel.refundSale(sale.id, dryRun) },
             onMarkShipped = { dryRun -> viewModel.markShipped(sale.id, dryRun) },
+            onResendReceipt = { dryRun -> viewModel.resendReceipt(sale.id, dryRun) },
         )
     }
 }
@@ -339,6 +356,7 @@ private fun SaleDetailDialog(
     onDismiss: () -> Unit,
     onRefund: (dryRun: Boolean) -> Unit,
     onMarkShipped: (dryRun: Boolean) -> Unit,
+    onResendReceipt: (dryRun: Boolean) -> Unit,
 ) {
     var dryRun by remember { mutableStateOf(true) }
     var confirmRefund by remember { mutableStateOf(false) }
@@ -372,6 +390,10 @@ private fun SaleDetailDialog(
                     onClick = { onMarkShipped(dryRun) },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Mark as shipped") }
+                OutlinedButton(
+                    onClick = { onResendReceipt(dryRun) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Resend receipt") }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },

@@ -92,7 +92,7 @@ class OpsRepository @Inject constructor(
     fun retryExecution(jobId: String, execId: String): Flow<ApiResult<String>> = flow {
         emit(ApiResult.Loading)
         try {
-            val res = apiProvider.service().retryExecution(jobId, execId)
+            val res = apiProvider.service().retryExecution(execId)
             if (res.isSuccessful) emit(ApiResult.Success(res.body()?.message ?: "Retry queued"))
             else emit(ApiResult.Error(parseError(res)))
         } catch (e: IOException) {
@@ -112,6 +112,18 @@ class OpsRepository @Inject constructor(
             emit(ApiResult.Error(networkError(e)))
         } catch (_: Exception) {
             emit(ApiResult.Error("Could not load notifications."))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun unreadCount(): Flow<ApiResult<Int>> = flow {
+        try {
+            val res = apiProvider.service().unreadCount()
+            if (res.isSuccessful) emit(ApiResult.Success(res.body()?.get("unread") ?: 0))
+            else emit(ApiResult.Error(parseError(res)))
+        } catch (e: IOException) {
+            emit(ApiResult.Error(networkError(e)))
+        } catch (_: Exception) {
+            emit(ApiResult.Error("Could not load unread count."))
         }
     }.flowOn(Dispatchers.IO)
 

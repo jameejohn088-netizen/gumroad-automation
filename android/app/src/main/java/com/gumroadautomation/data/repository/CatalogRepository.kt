@@ -256,4 +256,17 @@ class CatalogRepository @Inject constructor(
             emit(ApiResult.Error("Mark-as-shipped failed. Please try again."))
         }
     }.flowOn(Dispatchers.IO)
+
+    fun resendReceipt(saleId: String, dryRun: Boolean): Flow<ApiResult<ActionResultDto>> = flow {
+        emit(ApiResult.Loading)
+        try {
+            val res = apiProvider.service().resendReceipt(saleId, DryRunRequest(dryRun))
+            if (res.isSuccessful) emit(ApiResult.Success(res.body()!!))
+            else emit(ApiResult.Error(parseError(res)))
+        } catch (e: IOException) {
+            emit(ApiResult.Error(networkError(e)))
+        } catch (_: Exception) {
+            emit(ApiResult.Error("Resend receipt failed. Please try again."))
+        }
+    }.flowOn(Dispatchers.IO)
 }

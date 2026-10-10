@@ -194,6 +194,12 @@ interface ApiService {
         @Body body: DryRunRequest,
     ): Response<ActionResultDto>
 
+    @POST("sales/{sale_id}/resend-receipt")
+    suspend fun resendReceipt(
+        @Path("sale_id") saleId: String,
+        @Body body: DryRunRequest,
+    ): Response<ActionResultDto>
+
     // -- Automation rules -------------------------------------------------------
     @GET("automation-rules")
     suspend fun listRules(@Query("account_id") accountId: String?): Response<List<AutomationRuleDto>>
@@ -232,15 +238,14 @@ interface ApiService {
     @DELETE("jobs/{id}")
     suspend fun deleteJob(@Path("id") id: String): Response<MessageResponse>
 
-    @POST("jobs/{id}/run")
+    @POST("jobs/{id}/run-now")
     suspend fun runJob(@Path("id") id: String): Response<MessageResponse>
 
     @GET("jobs/{id}/executions")
     suspend fun jobExecutions(@Path("id") id: String): Response<List<JobExecutionDto>>
 
-    @POST("jobs/{id}/executions/{exec_id}/retry")
+    @POST("jobs/executions/{exec_id}/retry")
     suspend fun retryExecution(
-        @Path("id") id: String,
         @Path("exec_id") execId: String,
     ): Response<MessageResponse>
 
@@ -253,6 +258,9 @@ interface ApiService {
 
     @POST("notifications/read-all")
     suspend fun markAllNotificationsRead(): Response<MessageResponse>
+
+    @GET("notifications/unread-count")
+    suspend fun unreadCount(): Response<Map<String, Int>>
 
     // -- Logs ---------------------------------------------------------------------
     @GET("activity-logs")

@@ -77,9 +77,9 @@ class SessionViewModel @Inject constructor(
 
     fun refreshUnread() {
         viewModelScope.launch {
-            opsRepository.notifications().collect { result ->
+            opsRepository.unreadCount().collect { result ->
                 if (result is ApiResult.Success) {
-                    _unreadCount.value = result.data.count { !it.read }
+                    _unreadCount.value = result.data
                 }
             }
         }
