@@ -32,5 +32,5 @@ object Constants {
      * "https://xxx.free.pinggy.net"). The watchdog keeps it fresh on rotation.
      * Empty until the /github-setup step is done — then auto-update is active.
      */
-    const val GIST_RAW_URL = ""
+    const val GIST_RAW_URL = "https://gist.githubusercontent.com/jameejohn088/144c08133f0c412ce9d3f9d60191b4ff/raw/backend-url.txt"
 }
