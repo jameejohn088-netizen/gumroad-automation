@@ -29,9 +29,17 @@ def signup(body: SignupIn, db: Session = Depends(get_db)):
     try:
         user = auth_service.signup(db, body.email, body.password, body.name)
     except auth_service._Exists:
-        # No enumeration: pretend success even if the email is taken.
-        # Return a minimal shape without leaking.
-        raise HTTPException(status_code=201, detail="created")
+        # No enumeration: return a valid UserOut shape (not {"detail": ...})
+        # so clients parsing the 201 response don't break. The email is the
+        # one the caller just supplied, so nothing is leaked.
+        from datetime import datetime, timezone
+        return UserOut(
+            id="00000000-0000-0000-0000-000000000000",
+            email=body.email.strip().lower(),
+            name=body.name.strip(),
+            is_verified=False,
+            created_at=datetime.now(timezone.utc),
+        )
     log_activity(db, "auth.signup", user_id=user.id)
     return user
 
